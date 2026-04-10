@@ -18,9 +18,10 @@ When the user signals they want to close the session, Claude runs a closing prot
 
 1. **Scans** the full conversation
 2. **Extracts** what's worth remembering
-3. **Saves** to memory using `memory_user_edits`
-4. **Presents** a closing summary to the user
-5. **Says goodbye** in a warm, personalized way
+3. **Saves** to a persistent session log file
+4. **Updates** the project's CLAUDE.md if relevant context was found
+5. **Presents** a closing summary to the user
+6. **Says goodbye** in a warm, personalized way
 
 ## Execution protocol
 
@@ -35,42 +36,91 @@ Review the entire thread and identify these categories:
 - **Project context**: What they're working on, current state, next steps
 - **Problems solved**: Solutions found that could be useful in future sessions
 
-### Step 2: Save to memory
+### Step 2: Save to session log
 
-Use `memory_user_edits` with `view` command first to check what already exists and avoid duplicates.
+Append a new entry to `~/.claude/session-log.md`. Create the file if it doesn't exist.
 
-Then use `add` for each new piece of information that is:
+Each entry should follow this format:
+
+```markdown
+---
+
+## Session: YYYY-MM-DD HH:MM
+
+**Project:** [project name or directory]
+
+**Summary:**
+- [Key point 1]
+- [Key point 2]
+
+**Decisions:**
+- [Decision 1]
+
+**Pending:**
+- [ ] [Task 1]
+- [ ] [Task 2]
+
+**Notes:**
+- [Anything else worth remembering]
+```
+
+### Step 3: Auto-setup session recovery (first run only)
+
+Check if `~/.claude/CLAUDE.md` exists and contains a `## Session Recovery` section. If it doesn't, append the following block:
+
+```markdown
+
+## Session Recovery
+At the start of every conversation, read ~/.claude/session-log.md to recover context from previous sessions. Use it to understand what the user was working on, pending tasks, and key decisions. Proactively mention relevant context when it applies.
+```
+
+This ensures that all future Claude Code sessions will automatically read the session log and pick up where the user left off. This step only runs once.
+
+### Step 4: Update project CLAUDE.md (if applicable)
+
+If the conversation produced project-specific context that would help future sessions (architecture decisions, conventions, workflow preferences), append it to the project's `CLAUDE.md` file under a `## Session Notes` section.
+
+Only add information that is:
+- **Project-specific**: Directly related to the current codebase
 - **Lasting**: Not ephemeral or single-use
-- **Useful**: Will help personalize future conversations
-- **Concise**: Written in one clear line
+- **Actionable**: Helps Claude work better on this project next time
 
-Examples:
-- `User is building a fitness app in React Native`
-- `User prefers responses in Spanish with code in English`
-- `User chose PostgreSQL over MongoDB for their project`
+If no project-specific context was found, skip this step.
 
-### Step 3: Present closing summary
+### Step 5: Present closing summary
 
-Show the user a brief, friendly summary with this structure:
+Show the user a brief, friendly summary:
 
 ```
 ## Session Summary
 
-**Saved for next time:**
-- [short list of what was saved to memory]
+**Saved to session log:**
+- [short list of what was logged]
 
-**Pending items you mentioned:**
+**Updated CLAUDE.md:**
+- [what was added, or "No project-specific updates"]
+
+**Pending items:**
 - [tasks or to-dos, if any]
 
 **Until next time!**
 [Brief, warm goodbye — personalized if there's context]
 ```
 
-### Important rules
+## How context is recovered
+
+When starting a new session, Claude can read:
+- `~/.claude/session-log.md` for past session summaries
+- The project's `CLAUDE.md` for project-specific context saved in previous sessions
+
+This gives continuity across sessions without relying on memory APIs.
+
+## Important rules
 
 - **Never save sensitive information**: passwords, tokens, API keys, specific financial data, ID numbers
-- **No duplicates**: If something is already in memory, don't add it again
+- **No duplicates**: Check session-log.md before appending to avoid repeating the same info
 - **Ask when in doubt**: If unsure whether something is worth saving, ask the user
 - **Match language**: Respect the language the user used during the conversation
 - **Trivial sessions**: If the conversation was light (just a greeting, a simple question), don't invent things to save. Say something like "Light session today — nothing new to save. See you next time!"
 - **Brevity**: The closing summary should be short. No more than 10 lines.
+- **Session log size**: If `~/.claude/session-log.md` exceeds 200 lines, archive older entries to `~/.claude/session-log-archive.md` keeping only the last 50 entries in the main file.
