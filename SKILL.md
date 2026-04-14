@@ -36,6 +36,49 @@ Review the entire thread and identify these categories:
 - **Project context**: What they're working on, current state, next steps
 - **Problems solved**: Solutions found that could be useful in future sessions
 
+### Step 1.5: Session Balance Analysis
+
+**Analysis**
+
+Classify conversation content into these categories (must sum to 100%, 5% increments minimum):
+
+- `technical` → coding, debugging, architecture, tools, infrastructure
+- `planning` → strategy, decisions, roadmap, prioritization
+- `learning` → research, concepts, documentation, exploration
+- `admin` → legal, taxes, contracts, business operations
+- `creation` → content, writing, design, publishing
+- `comms` → emails, messages, outreach, coordination
+
+**Persistence**
+
+Append balance data to `~/.claude/session-balance.json` (a JSON array). Never overwrite — always append a new object:
+
+```json
+{"date": "YYYY-MM-DD", "project": "<dir>", "technical": 40, "planning": 30, "creation": 20, "admin": 10}
+```
+
+If the file doesn't exist, create it as `[]` and then append. Include only categories with non-zero scores.
+
+Also include the balance line inside the session log entry (Step 2):
+
+```
+**Balance:** technical=40% planning=30% creation=20% admin=10%
+```
+
+**Output format**
+
+Render in the closing summary (Step 5) as a minimal ASCII bar chart. Use filled block `█` and light block `░` scaled to 20 chars width. Omit any category scoring 0%. No color codes, no emojis — terminal-safe only.
+
+```
+Session Balance
+───────────────────────────────
+technical  ████████████░░░░░░░░  40%
+planning   ██████████░░░░░░░░░░  30%
+creation   ████████░░░░░░░░░░░░  20%
+admin      ████░░░░░░░░░░░░░░░░  10%
+───────────────────────────────
+```
+
 ### Step 2: Save to session log
 
 Append a new entry to `~/.claude/session-log.md`. Create the file if it doesn't exist.
