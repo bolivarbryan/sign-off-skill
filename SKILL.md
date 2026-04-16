@@ -92,6 +92,8 @@ Each entry should follow this format:
 
 **Project:** [project name or directory]
 
+**Remote:** [host:org/repo — omit this line if no git remote is set]
+
 **Summary:**
 - [Key point 1]
 - [Key point 2]
@@ -106,6 +108,13 @@ Each entry should follow this format:
 **Notes:**
 - [Anything else worth remembering]
 ```
+
+**Deriving `**Remote:**`:** Run `git remote get-url origin` from the project directory. Normalize the result to `host:org/repo`:
+- Strip leading `https://` or `git@` and trailing `.git`
+- Replace the first `/` after the host with `:` (so `github.com/foo/bar` becomes `github.com:foo/bar`)
+- For SSH URLs like `git@github.com:foo/bar.git`, the normalization already leaves `github.com:foo/bar`
+
+If `git remote get-url origin` fails or returns empty, omit the `**Remote:**` line entirely. A later `**Report:**` trailing line may be appended by Step 4.5 — see that step for its format.
 
 ### Step 3: Auto-setup session recovery (first run only)
 
