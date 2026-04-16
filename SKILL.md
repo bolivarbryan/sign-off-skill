@@ -301,6 +301,9 @@ Show the user a brief, friendly summary:
 **Updated CLAUDE.md:**
 - [what was added, or "No project-specific updates"]
 
+**Report drafted:**
+- [To: <name> <email> — Gmail draft id <id>  OR  Skipped (<reason>)  OR  Failed (<reason>)]
+
 **Pending items:**
 - [tasks or to-dos, if any]
 
@@ -325,3 +328,18 @@ This gives continuity across sessions without relying on memory APIs.
 - **Trivial sessions**: If the conversation was light (just a greeting, a simple question), don't invent things to save. Say something like "Light session today — nothing new to save. See you next time!"
 - **Brevity**: The closing summary should be short. No more than 10 lines.
 - **Session log size**: If `~/.claude/session-log.md` exceeds 200 lines, archive older entries to `~/.claude/session-log-archive.md` keeping only the last 50 entries in the main file.
+- **Never auto-send reports**: Step 4.5 must create a Gmail draft only. Let the user review and hit send manually.
+- **Strip sensitive content from reports**: apply the same rules as session-log saves — no passwords, tokens, keys, specific financial figures, or ID numbers in the draft body.
+- **Recipient list is not memory**: `~/.claude/report-recipients.json` is the source of truth; it is hand-editable by the user.
+- **Report lookup is by `remote_key`, not display name**: two projects sharing a folder name are correctly disambiguated by their git remote.
+
+## How the report sources content
+
+Step 4.5 synthesizes each report from two sources:
+
+1. The current conversation — decisions, pending items, blockers, completed work, and an overall status read.
+2. Session-log entries whose `**Remote:**` line matches the current project's `remote_key` exactly AND whose header timestamp is strictly greater than `last_reported_at` for this project.
+
+Entries without a `**Remote:**` line, or with a header that does not match the canonical `## Session: YYYY-MM-DD HH:MM` format, are excluded. This is deliberate — the `**Remote:**` line was added in a specific version of this skill, and older entries have no safe way to be attributed to a project. Exclusion is the safe default.
+
+`last_reported_at` is only updated after a successful Gmail draft creation. If drafting fails or the user skips, the cutoff stays put and the next report covers the same window.
