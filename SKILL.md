@@ -81,21 +81,27 @@ admin      ████░░░░░░░░░░░░░░░░  10%
 
 ### Step 2: Save to session log
 
-Two files:
+The session log works like a PlayStation memory card:
 
-- `~/.claude/session-log.md` — **last session only**. Small, read on every startup.
-- `~/.claude/session-log-history.md` — every earlier session, appended in order.
+- `~/.claude/session-log.md` — **the card**: one slot per project, each holding that
+  project's latest session, plus a slot table at the top. Max 15 slots. Small, read on
+  every startup.
+- `~/.claude/session-log-history.md` — **old saves**: every session that was overwritten
+  by a newer save for the same project (or evicted when the card is full).
 
-**First rotate, then append.** Run the rotation script, which moves whatever the main
-file holds into the history and resets the main file to its header:
+**Saving:** write the new entry to a temp file, then let the script overwrite the slot:
 
 ```bash
-~/.claude/skills/sign-off/rotate.sh
+~/.claude/skills/sign-off/memcard.py save "$PWD" /path/to/entry.md
 ```
 
-Then append the new entry to `~/.claude/session-log.md`. Never write directly to the
-history file — the script is the only thing that touches it. If the script fails, stop
-and tell the user; do not append on top of the old entry.
+The script moves the project's previous save (matched by `**Dir:**`) to the history,
+inserts the new entry, adds a `**Dir:**` line if the entry lacks one, and rebuilds the
+slot table. Never edit `session-log.md` or the history by hand except to append the
+`**Report:**` line in Step 4.5. If the script fails, stop and tell the user.
+
+Other commands: `memcard.py list` (slot table), `memcard.py show <dir>` (one slot),
+`memcard.py index` (rebuild the table).
 
 Each entry should follow this format:
 
@@ -104,7 +110,8 @@ Each entry should follow this format:
 
 ## Session: YYYY-MM-DD HH:MM
 
-**Project:** [project name or directory]
+**Project:** [project name]
+**Dir:** [absolute project directory — the slot key; use `$PWD` of the project]
 
 **Remote:** [host:org/repo — omit this line if no git remote is set]
 
@@ -128,6 +135,8 @@ Each entry should follow this format:
 - Replace the first `/` after the host with `:` (so `github.com/foo/bar` becomes `github.com:foo/bar`)
 - For SSH URLs like `git@github.com:foo/bar.git`, the normalization already leaves `github.com:foo/bar`
 
+The header date is mandatory (`## Session: YYYY-MM-DD HH:MM`); the script rejects entries without one.
+
 If `git remote get-url origin` fails or returns empty, omit the `**Remote:**` line entirely. A later `**Report:**` trailing line may be appended by Step 4.5 — see that step for its format.
 
 ### Step 3: Auto-setup session recovery (first run only)
@@ -137,7 +146,7 @@ Check if `~/.claude/CLAUDE.md` exists and contains a `## Session Recovery` secti
 ```markdown
 
 ## Session Recovery
-At the start of every conversation, read ~/.claude/session-log.md (last session only) to recover context. Use it to understand what the user was working on, pending tasks, and key decisions. Proactively mention relevant context when it applies. Older sessions live in ~/.claude/session-log-history.md — do not read it whole; grep it by project or date only when the last session is not enough.
+At the start of every conversation, read ~/.claude/session-log.md. It is a memory card: one slot per project with that project's latest session, and a slot table at the top. The slot whose **Dir:** matches the current directory is the primary context (pending tasks, decisions); the other slots give the overview of what else is in flight. Older sessions live in ~/.claude/session-log-history.md — do not read it whole; grep it by project or date only when the slot is not enough.
 ```
 
 This ensures that all future Claude Code sessions will automatically read the session log and pick up where the user left off. This step only runs once.
@@ -226,7 +235,7 @@ Two sources, both scoped to the current `remote_key`:
    - Decisions agreed to
    - An overall status read (on track / blocked on X / ahead)
 
-2. **Recent session-log entries** from `~/.claude/session-log.md` (the session just written) and `~/.claude/session-log-history.md` (all earlier ones; check the tail first, it is newest-last). Select entries where ALL apply:
+2. **Recent session-log entries** from this project's slot in `~/.claude/session-log.md` (the session just saved) and `~/.claude/session-log-history.md` (earlier saves; grep for the `**Remote:**` value). Select entries where ALL apply:
    - The `**Remote:**` line equals `remote_key` exactly
    - The entry's `## Session: YYYY-MM-DD HH:MM` header parses cleanly
    - The parsed timestamp (treated as local time, converted to UTC) is strictly greater than `last_reported_at`
@@ -289,7 +298,7 @@ mcp__claude_ai_Gmail__gmail_create_draft(
 - Set `project_defaults[remote_key].last_reported_at = <now, ISO 8601 UTC>`
 - Save `~/.claude/report-recipients.json` atomically: write to `report-recipients.json.tmp`, then `mv` over the original
 - Render the same report body in the conversation as a fenced code block so the user sees it here too
-- Append `**Report:** drafted to <name> <email> (Gmail draft id <id>)` as the last line of the session-log entry just written in Step 2
+- Append `**Report:** drafted to <name> <email> (Gmail draft id <id>)` as the last line of this project's slot in `~/.claude/session-log.md` (the entry just saved in Step 2)
 
 **On failure (not authenticated, network error, MCP error):**
 - Do NOT update `last_reported_at`
@@ -328,8 +337,8 @@ Show the user a brief, friendly summary:
 ## How context is recovered
 
 When starting a new session, Claude can read:
-- `~/.claude/session-log.md` for the last session's summary (always small)
-- `~/.claude/session-log-history.md` for older sessions (grep, don't read whole)
+- `~/.claude/session-log.md` — the memory card: latest session per project (always small)
+- `~/.claude/session-log-history.md` — overwritten saves (grep, don't read whole)
 - The project's `CLAUDE.md` for project-specific context saved in previous sessions
 
 This gives continuity across sessions without relying on memory APIs.
@@ -337,12 +346,12 @@ This gives continuity across sessions without relying on memory APIs.
 ## Important rules
 
 - **Never save sensitive information**: passwords, tokens, API keys, specific financial data, ID numbers
-- **No duplicates**: Check the last entry in session-log.md (and grep the history for the project) before appending to avoid repeating the same info
+- **No duplicates**: Check the project's current slot (`memcard.py show "$PWD"`) before saving to avoid repeating the same info
 - **Ask when in doubt**: If unsure whether something is worth saving, ask the user
 - **Match language**: Respect the language the user used during the conversation
 - **Trivial sessions**: If the conversation was light (just a greeting, a simple question), don't invent things to save. Say something like "Light session today — nothing new to save. See you next time!"
 - **Brevity**: The closing summary should be short. No more than 10 lines.
-- **Session log rotation**: `~/.claude/session-log.md` holds exactly one session. Every sign-off runs `rotate.sh` (Step 2) before appending, so the previous session moves to `~/.claude/session-log-history.md`. Never edit or truncate the history by hand.
+- **Memory card rules**: `~/.claude/session-log.md` holds one slot per project (max 15). Every sign-off saves through `memcard.py save` (Step 2), which moves the project's previous save to `~/.claude/session-log-history.md`. Never edit or truncate the history by hand.
 - **Never auto-send reports**: Step 4.5 must create a Gmail draft only. Let the user review and hit send manually.
 - **Strip sensitive content from reports**: apply the same rules as session-log saves — no passwords, tokens, keys, specific financial figures, or ID numbers in the draft body.
 - **Recipient list is not memory**: `~/.claude/report-recipients.json` is the source of truth; it is hand-editable by the user.
