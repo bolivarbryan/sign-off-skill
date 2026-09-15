@@ -81,7 +81,21 @@ admin      ████░░░░░░░░░░░░░░░░  10%
 
 ### Step 2: Save to session log
 
-Append a new entry to `~/.claude/session-log.md`. Create the file if it doesn't exist.
+Two files:
+
+- `~/.claude/session-log.md` — **last session only**. Small, read on every startup.
+- `~/.claude/session-log-history.md` — every earlier session, appended in order.
+
+**First rotate, then append.** Run the rotation script, which moves whatever the main
+file holds into the history and resets the main file to its header:
+
+```bash
+~/.claude/skills/sign-off/rotate.sh
+```
+
+Then append the new entry to `~/.claude/session-log.md`. Never write directly to the
+history file — the script is the only thing that touches it. If the script fails, stop
+and tell the user; do not append on top of the old entry.
 
 Each entry should follow this format:
 
@@ -123,7 +137,7 @@ Check if `~/.claude/CLAUDE.md` exists and contains a `## Session Recovery` secti
 ```markdown
 
 ## Session Recovery
-At the start of every conversation, read ~/.claude/session-log.md to recover context from previous sessions. Use it to understand what the user was working on, pending tasks, and key decisions. Proactively mention relevant context when it applies.
+At the start of every conversation, read ~/.claude/session-log.md (last session only) to recover context. Use it to understand what the user was working on, pending tasks, and key decisions. Proactively mention relevant context when it applies. Older sessions live in ~/.claude/session-log-history.md — do not read it whole; grep it by project or date only when the last session is not enough.
 ```
 
 This ensures that all future Claude Code sessions will automatically read the session log and pick up where the user left off. This step only runs once.
@@ -212,7 +226,7 @@ Two sources, both scoped to the current `remote_key`:
    - Decisions agreed to
    - An overall status read (on track / blocked on X / ahead)
 
-2. **Recent session-log entries** from `~/.claude/session-log.md`. Select entries where ALL apply:
+2. **Recent session-log entries** from `~/.claude/session-log.md` (the session just written) and `~/.claude/session-log-history.md` (all earlier ones; check the tail first, it is newest-last). Select entries where ALL apply:
    - The `**Remote:**` line equals `remote_key` exactly
    - The entry's `## Session: YYYY-MM-DD HH:MM` header parses cleanly
    - The parsed timestamp (treated as local time, converted to UTC) is strictly greater than `last_reported_at`
@@ -314,7 +328,8 @@ Show the user a brief, friendly summary:
 ## How context is recovered
 
 When starting a new session, Claude can read:
-- `~/.claude/session-log.md` for past session summaries
+- `~/.claude/session-log.md` for the last session's summary (always small)
+- `~/.claude/session-log-history.md` for older sessions (grep, don't read whole)
 - The project's `CLAUDE.md` for project-specific context saved in previous sessions
 
 This gives continuity across sessions without relying on memory APIs.
@@ -322,12 +337,12 @@ This gives continuity across sessions without relying on memory APIs.
 ## Important rules
 
 - **Never save sensitive information**: passwords, tokens, API keys, specific financial data, ID numbers
-- **No duplicates**: Check session-log.md before appending to avoid repeating the same info
+- **No duplicates**: Check the last entry in session-log.md (and grep the history for the project) before appending to avoid repeating the same info
 - **Ask when in doubt**: If unsure whether something is worth saving, ask the user
 - **Match language**: Respect the language the user used during the conversation
 - **Trivial sessions**: If the conversation was light (just a greeting, a simple question), don't invent things to save. Say something like "Light session today — nothing new to save. See you next time!"
 - **Brevity**: The closing summary should be short. No more than 10 lines.
-- **Session log size**: If `~/.claude/session-log.md` exceeds 200 lines, archive older entries to `~/.claude/session-log-archive.md` keeping only the last 50 entries in the main file.
+- **Session log rotation**: `~/.claude/session-log.md` holds exactly one session. Every sign-off runs `rotate.sh` (Step 2) before appending, so the previous session moves to `~/.claude/session-log-history.md`. Never edit or truncate the history by hand.
 - **Never auto-send reports**: Step 4.5 must create a Gmail draft only. Let the user review and hit send manually.
 - **Strip sensitive content from reports**: apply the same rules as session-log saves — no passwords, tokens, keys, specific financial figures, or ID numbers in the draft body.
 - **Recipient list is not memory**: `~/.claude/report-recipients.json` is the source of truth; it is hand-editable by the user.
@@ -338,7 +353,7 @@ This gives continuity across sessions without relying on memory APIs.
 Step 4.5 synthesizes each report from two sources:
 
 1. The current conversation — decisions, pending items, blockers, completed work, and an overall status read.
-2. Session-log entries whose `**Remote:**` line matches the current project's `remote_key` exactly AND whose header timestamp is strictly greater than `last_reported_at` for this project.
+2. Session-log entries (from both `session-log.md` and `session-log-history.md`) whose `**Remote:**` line matches the current project's `remote_key` exactly AND whose header timestamp is strictly greater than `last_reported_at` for this project.
 
 Entries without a `**Remote:**` line, or with a header that does not match the canonical `## Session: YYYY-MM-DD HH:MM` format, are excluded. This is deliberate — the `**Remote:**` line was added in a specific version of this skill, and older entries have no safe way to be attributed to a project. Exclusion is the safe default.
 
