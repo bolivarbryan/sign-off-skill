@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "sign-off",
+  "displayName": "Sign-Off",
+  "version": "2.0.0",
+  "description": "Orderly end-of-session ritual: saves decisions, pending tasks and project context to a per-project memory card so the next session picks up where you left off.",
+  "author": {
+    "name": "Bryan Bolivar",
+    "url": "https://github.com/bolivarbryan"
+  },
+  "homepage": "https://github.com/bolivarbryan/sign-off-skill",
+  "repository": "https://github.com/bolivarbryan/sign-off-skill",
+  "license": "MIT",
+  "keywords": ["session", "memory", "context", "handoff", "productivity", "skill"]
+}

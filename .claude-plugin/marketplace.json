@@ -1,0 +1,17 @@
+{
+  "name": "sign-off-skill",
+  "description": "Marketplace for the sign-off plugin: session memory for Claude Code.",
+  "owner": {
+    "name": "Bryan Bolivar",
+    "url": "https://github.com/bolivarbryan"
+  },
+  "plugins": [
+    {
+      "name": "sign-off",
+      "source": "./",
+      "description": "Orderly end-of-session ritual that saves context to a per-project memory card.",
+      "category": "productivity",
+      "tags": ["session", "memory", "context"]
+    }
+  ]
+}
