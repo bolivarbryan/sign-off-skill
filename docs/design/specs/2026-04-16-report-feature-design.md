@@ -117,7 +117,7 @@ First report for this project. Who should it go to?
 
 Saved recipients:
   1) Jane Doe <jane@example.com>
-  2) John Roe <john@example.org>
+  2) John Roe <john@example.com>
 
   [A] Add new recipient
   [S] Skip report this time

@@ -27,7 +27,7 @@
 **Why first:** Step 4.5's report-source filter relies on `**Remote:**` being present on future entries. Land this first so the metadata starts accumulating before the report step is live.
 
 **Files:**
-- Modify: `~/Developer/claude-skill/sign-off-skill/SKILL.md` (the Step 2 entry template block)
+- Modify: `./SKILL.md` (the Step 2 entry template block)
 
 - [ ] **Step 1: Apply the template edit**
 
@@ -88,14 +88,14 @@ If `git remote get-url origin` fails or returns empty, omit the `**Remote:**` li
 
 Run:
 ```bash
-sed -n '82,130p' ~/Developer/claude-skill/sign-off-skill/SKILL.md
+sed -n '82,130p' ./SKILL.md
 ```
 Expected: the Step 2 section contains the `**Remote:**` placeholder in the template AND the "Deriving `**Remote:**`" paragraph after the template block.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/Developer/claude-skill/sign-off-skill
+cd .
 git add SKILL.md
 git commit -m "$(cat <<'EOF'
 Add Remote line to session-log template
@@ -116,7 +116,7 @@ EOF
 **Why second:** This is the bulk of the feature. Lands as one commit because the six subsections form a single contract (preconditions → selection → gather → template → draft → summary output) that makes no sense partially applied.
 
 **Files:**
-- Modify: `~/Developer/claude-skill/sign-off-skill/SKILL.md` (insert a new section between Step 4 and Step 5)
+- Modify: `./SKILL.md` (insert a new section between Step 4 and Step 5)
 
 - [ ] **Step 1: Apply the insertion**
 
@@ -289,20 +289,20 @@ Emit one line item into the Step 5 summary block:
 
 Run:
 ```bash
-grep -n "### Step 4.5" ~/Developer/claude-skill/sign-off-skill/SKILL.md
+grep -n "### Step 4.5" ./SKILL.md
 ```
 Expected: exactly one match for `### Step 4.5: Generate & draft progress report`.
 
 Run:
 ```bash
-awk '/### Step 4.5/,/### Step 5/' ~/Developer/claude-skill/sign-off-skill/SKILL.md | wc -l
+awk '/### Step 4.5/,/### Step 5/' ./SKILL.md | wc -l
 ```
 Expected: greater than 100 lines (the full Step 4.5 section plus the Step 5 heading line).
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd ~/Developer/claude-skill/sign-off-skill
+cd .
 git add SKILL.md
 git commit -m "$(cat <<'EOF'
 Add Step 4.5 Generate & Draft Report to sign-off protocol
@@ -325,7 +325,7 @@ EOF
 ## Task 3: Update Step 5 closing summary template to include report line
 
 **Files:**
-- Modify: `~/Developer/claude-skill/sign-off-skill/SKILL.md` (Step 5 template block)
+- Modify: `./SKILL.md` (Step 5 template block)
 
 - [ ] **Step 1: Apply the template edit**
 
@@ -372,14 +372,14 @@ Use Edit with:
 
 Run:
 ```bash
-grep -n "Report drafted" ~/Developer/claude-skill/sign-off-skill/SKILL.md
+grep -n "Report drafted" ./SKILL.md
 ```
 Expected: at least one match in Step 5's template.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd ~/Developer/claude-skill/sign-off-skill
+cd .
 git add SKILL.md
 git commit -m "$(cat <<'EOF'
 Add Report drafted line to closing summary template
@@ -398,7 +398,7 @@ EOF
 ## Task 4: Add Important rules entries and the "How the report sources content" reference section
 
 **Files:**
-- Modify: `~/Developer/claude-skill/sign-off-skill/SKILL.md` (Important rules section near the end of the file)
+- Modify: `./SKILL.md` (Important rules section near the end of the file)
 
 - [ ] **Step 1: Apply the edit**
 
@@ -449,15 +449,15 @@ Entries without a `**Remote:**` line, or with a header that does not match the c
 
 Run:
 ```bash
-grep -n "Never auto-send reports" ~/Developer/claude-skill/sign-off-skill/SKILL.md
-grep -n "How the report sources content" ~/Developer/claude-skill/sign-off-skill/SKILL.md
+grep -n "Never auto-send reports" ./SKILL.md
+grep -n "How the report sources content" ./SKILL.md
 ```
 Expected: each grep returns exactly one match.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd ~/Developer/claude-skill/sign-off-skill
+cd .
 git add SKILL.md
 git commit -m "$(cat <<'EOF'
 Add report-specific rules and sources reference section
@@ -480,7 +480,7 @@ EOF
 
 **Files:**
 - Sync target: `~/.claude/skills/sign-off/SKILL.md`
-- Source: `~/Developer/claude-skill/sign-off-skill/SKILL.md`
+- Source: `./SKILL.md`
 
 - [ ] **Step 1: Verify installed-skill directory exists**
 
@@ -496,14 +496,14 @@ If it does not exist, stop and investigate — the installed skill may be under 
 
 Run:
 ```bash
-cp ~/Developer/claude-skill/sign-off-skill/SKILL.md ~/.claude/skills/sign-off/SKILL.md
+cp ./SKILL.md ~/.claude/skills/sign-off/SKILL.md
 ```
 
 - [ ] **Step 3: Verify the sync**
 
 Run:
 ```bash
-diff ~/Developer/claude-skill/sign-off-skill/SKILL.md ~/.claude/skills/sign-off/SKILL.md
+diff ./SKILL.md ~/.claude/skills/sign-off/SKILL.md
 ```
 Expected: no output (files identical). A non-zero exit code means the sync failed.
 
@@ -530,7 +530,7 @@ Record: whether `report-recipients.json` exists, and the timestamp of the last s
 
 - [ ] **Step 2: Trigger a first-time sign-off in a fresh Claude Code session**
 
-In a new Claude Code session running in `~/Developer/claude-skill/sign-off-skill`, do a small amount of real work (e.g., open SKILL.md and discuss one paragraph) so the session is non-trivial, then type `/sign-off`.
+In a new Claude Code session running in `.`, do a small amount of real work (e.g., open SKILL.md and discuss one paragraph) so the session is non-trivial, then type `/sign-off`.
 
 Expected: the skill proceeds through Steps 1–4, then Step 4.5 prompts for recipient selection using the Case A flow (first-time).
 
